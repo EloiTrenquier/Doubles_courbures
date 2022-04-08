@@ -17,14 +17,17 @@ class Vertex:
         self._points = [sub_vertex1, sub_vertex2]
         self._length = length
 
+
 class SubVertex:
     """ A subVertex is a point of a quadrangle on the Sphere Paving"""
+
     def __init__(self, id):
         self._id
 
     @property
     def id(self):
         return self._id
+
 
 class PavingGraph:
     """ A paving graph should be able to entirely represent a Paving and should be able to represent the addition/

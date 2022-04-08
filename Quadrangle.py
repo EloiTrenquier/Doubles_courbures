@@ -1,6 +1,6 @@
 # -------------------- Department Project -------------------- #
 # Authors: Eloi Trenquier (eloi.trenquier@eleves.enpc.fr)
-#
+#          Maxim Legendre (maxim.legendre@eleves.enpc.fr)
 #
 # Quadrangle Class
 # After a gaussian transform, a quad on the sphere represents a node in real life,

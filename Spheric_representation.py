@@ -1,6 +1,6 @@
 # -------------------- Department Project -------------------- #
 # Authors: Eloi Trenquier (eloi.trenquier@eleves.enpc.fr)
-#
+#          Maxim Legendre (maxim.legendre@eleves.enpc.fr)
 #
 # Spheric representation
 # We use this to represent points on our sphere and plot spheres
