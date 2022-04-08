@@ -69,6 +69,12 @@ def add_quad(noeud, quad, angle, cote="d"):
                 noeud = [[quad, angle]] + noeud
     return noeud, cond
 
+def somme_angle_noeud (noeud):
+    S = 0
+    for i in range(len(noeud)):
+        S += noeud[i][0].angle(noeud[i][1])
+    return S
+
 def possible_noeud(liste_quad, valence):
     liste_oriente= []
     for quad in liste_quad:
@@ -82,6 +88,14 @@ def possible_noeud(liste_quad, valence):
                 new_noeud, cond = add_quad(noeud_possible[i],liste_oriente[j][0],liste_oriente[j][1])
                 if cond :
                     noeud_popo.append(new_noeud)
+        noeud_possible = noeud_popo
+    noeuds_finaux = []
+    for i in range(len(noeud_possible)):
+        if somme_angle_noeud(noeud_possible[i]) > 2*pi -eps:
+            noeuds_finaux.append(noeud_possible[i])
+    return noeuds_finaux
+
+
 
 
 
