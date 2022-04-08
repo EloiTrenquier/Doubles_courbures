@@ -6,7 +6,6 @@
 # We use this to represent points on our sphere and plot spheres
 # --------------------------------------------------------- #
 
-from mayavi import mlab
 import numpy as np
 
 # Create a sphere
@@ -20,12 +19,5 @@ x = r*sin(phi)*cos(theta)
 y = r*sin(phi)*sin(theta)
 z = r*cos(phi)
 
-mlab.figure(1, bgcolor=(1, 1, 1), fgcolor=(0, 0, 0), size=(400, 300))
-mlab.clf()
 
 
-mlab.mesh(x , y , z, color=(0.0,0.5,0.5))
-#mlab.points3d(xx, yy, zz, scale_factor=0.05)
-
-
-mlab.show()

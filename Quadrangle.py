@@ -49,40 +49,40 @@ class Quad:
         """Long string representation of a Quad"""
         desc = f"Quad {self._id} is an ABCD quad with " \
                f"\n AB = {self.a}, BC = {self.b}, CD = {self.c}, DA = {self.d}" \
-               f"\n and DAB = {self._alpha}, ABC = {self}"
+               f"\n and DAB = {self.alpha}, ABC = {self.beta}"
 
     @property
-    def cote_gauche(self,ang):
+    def cote_gauche(self, ang):
         if ang == "alpha":
-            return self._a
+            return self._sides[0]
         if ang == "beta":
-            return self._b
+            return self._sides[1]
         if ang == "gamma":
-            return self._c
+            return self._sides[2]
         if ang == "delta":
-            return self._d
+            return self._sides[3]
 
     @property
-    def cote_droite(self,ang):
+    def cote_droite(self, ang):
         if ang == "alpha":
-            return self._d
+            return self._sides[3]
         if ang == "beta":
-            return self._a
+            return self._sides[0]
         if ang == "gamma":
-            return self._b
+            return self._sides[1]
         if ang == "delta":
-            return self._c
+            return self._sides[2]
 
     @property
     def angle(self, ang):
         if ang == "alpha":
-            return self._alpha
+            return self._angles[0]
         if ang == "beta":
-            return self._beta
+            return self._angles[1]
         if ang == "gamma":
-            return self._gamma
+            return self._angles[2]
         if ang == "delta":
-            return self._delta
+            return self._angles[3]
 
 
     def area(self):
