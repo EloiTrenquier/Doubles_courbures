@@ -8,34 +8,44 @@
 # --------------------------------------------------------- #
 import numpy as np
 
+
 class Quad:
     """A quadrangle can be defined by four angles and the length of a side (also an angle in spherical geometry)
     Here we define it with all the angles and all the side lengths in order not to have to compute anything """
+
     def __init__(self, id, alpha, beta, gamma, delta, a, b, c, d):
+        self._id = id
         self._angles = [alpha, beta, gamma, delta]
         self._sides = [a, b, c, d]
 
     @property
     def a(self):
         return self._sides[0]
+
     @property
     def b(self):
         return self._sides[1]
+
     @property
     def c(self):
         return self._sides[2]
+
     @property
     def d(self):
         return self._sides[3]
+
     @property
     def alpha(self):
         return self._angles[0]
+
     @property
     def beta(self):
         return self._angles[1]
+
     @property
     def gamma(self):
         return self._angles[2]
+
     @property
     def delta(self):
         return self._angles[3]
@@ -49,7 +59,7 @@ class Quad:
         """Long string representation of a Quad"""
         desc = f"Quad {self._id} is an ABCD quad with " \
                f"\n AB = {self.a}, BC = {self.b}, CD = {self.c}, DA = {self.d}" \
-               f"\n and DAB = {self.alpha}, ABC = {self.beta}"
+               f"\n and DAB = {self.alpha}, ABC = {self.beta}, BCD = {self.gamma}, CDA = {self.delta}"
 
     @property
     def cote_gauche(self, ang):
@@ -73,7 +83,6 @@ class Quad:
         if ang == "delta":
             return self._sides[2]
 
-    @property
     def angle(self, ang):
         if ang == "alpha":
             return self._angles[0]
@@ -86,4 +95,4 @@ class Quad:
 
 
     def area(self):
-        return self._alpha + self._beta + self._gamma + self._delta - 2*np.pi
+        return self.alpha + self.beta + self.gamma + self.delta - 2 * np.pi
