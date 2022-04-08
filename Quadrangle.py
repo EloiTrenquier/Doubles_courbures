@@ -51,5 +51,39 @@ class Quad:
                f"\n AB = {self.a}, BC = {self.b}, CD = {self.c}, DA = {self.d}" \
                f"\n and DAB = {self._alpha}, ABC = {self}"
 
+    @property
+    def cote_gauche(self,ang):
+        if ang == "alpha":
+            return self._a
+        if ang == "beta":
+            return self._b
+        if ang == "gamma":
+            return self._c
+        if ang == "delta":
+            return self._d
+
+    @property
+    def cote_droite(self,ang):
+        if ang == "alpha":
+            return self._d
+        if ang == "beta":
+            return self._a
+        if ang == "gamma":
+            return self._b
+        if ang == "delta":
+            return self._c
+
+    @property
+    def angle(self, ang):
+        if ang == "alpha":
+            return self._alpha
+        if ang == "beta":
+            return self._beta
+        if ang == "gamma":
+            return self._gamma
+        if ang == "delta":
+            return self._delta
+
+
     def area(self):
         return self._alpha + self._beta + self._gamma + self._delta - 2*np.pi

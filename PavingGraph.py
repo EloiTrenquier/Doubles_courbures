@@ -9,6 +9,11 @@
 # Red ones that join points that adjacent in our paving (connected)
 # --------------------------------------------------------- #
 
+from Spheric_representation import *
+import numpy as np
+
+pi = np.pi
+
 class Vertex:
     """A vertex is a set of two sub_vertices, it corresponds to an edge of our Sphere Paving"""
 
@@ -37,4 +42,22 @@ class PavingGraph:
         self._vertices = vertices
         self._subvertices = subvertices
         self._edges = edges
+
+
+def add_quad(noeud, quad, angle, cote = "d"):
+    S = 0
+    for i in range(len(noeud)):
+        S += noeud[i][0].angle(noeud[i][1])
+    cond = (S+quad.angle(angle))<2*pi
+    if cond:
+        if S == 2*pi:
+            cond = cond and (quad.cote_gauche(angle) == noeud[-1][0].cote_droite(noeud[-1][1])) and (quad.cote_droit(angle) == noeud[-1][0].cote_gauche(noeud[-1][1])
+
+
+        if cote == "d":
+            cond = cond and (quad.cote_gauche(angle) == noeud[-1][0].cote_droite(noeud[-1][1]))
+        else:
+            cond = cond and (quad.cote_droit(angle) == noeud[-1][0].cote_gauche(noeud[-1][1]))
+
+
 
