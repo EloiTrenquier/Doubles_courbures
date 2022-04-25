@@ -50,6 +50,10 @@ class Quad:
     def delta(self):
         return self._angles[3]
 
+    @property
+    def id(self):
+        return self._id
+
     def __str__(self):
         """Short string representaition of a Quad, returns only its _id value
         """
@@ -60,8 +64,18 @@ class Quad:
         desc = f"Quad {self._id} is an ABCD quad with " \
                f"\n AB = {self.a}, BC = {self.b}, CD = {self.c}, DA = {self.d}" \
                f"\n and DAB = {self.alpha}, ABC = {self.beta}, BCD = {self.gamma}, CDA = {self.delta}"
+        return desc
 
-    @property
+    def rotate(self, number_rotations=1):
+        """ Rotates the quad in the anti clock wise direction"""
+        ang = self._angles
+        cot = self._sides
+        n_rot = number_rotations%4
+        n_rot = 4-n_rot
+        ang = ang[n_rot:] + ang[:n_rot]
+        cot = cot[n_rot:] + cot[:n_rot]
+        return Quad(self._id, ang[0], ang[1], ang[2], ang[3], cot[0], cot[1], cot[2], cot[3])
+
     def cote_gauche(self, ang):
         if ang == "alpha":
             return self._sides[0]
@@ -72,7 +86,6 @@ class Quad:
         if ang == "delta":
             return self._sides[3]
 
-    @property
     def cote_droite(self, ang):
         if ang == "alpha":
             return self._sides[3]
