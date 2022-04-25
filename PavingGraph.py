@@ -23,7 +23,7 @@ class Vertex:
         """ The id will be used to get the position of the Vertex in the Vertex list"""
         self._id = id
         self._points = [sub_vertex1, sub_vertex2]
-        self._length = length # == a angle on the sphere
+        self._length = length # == an angle on the sphere
 
     @property
     def id(self):
@@ -105,6 +105,10 @@ class Edge:
     def subvertices(self):
         return self._subvertices
 
+    @property
+    def weight(self):
+        return self._weight
+
     def set_id(self, id):
         out_subv, in_subv = self._subvertices[0], self._subvertices[1]
         out_subv.set_out_edge_id(id)
@@ -160,7 +164,7 @@ class PavingGraph:
     def remove_vertex(self, vertex):
         """ Removes a vertex by sparsifying the list of used vertices ids"""
         self._used_vert_ids[vertex.id] = False
-        self._next_vert_id = vertex.id
+        self._next_vert_id = min(vertex.id, self._next_vert_id)
 
     def add_edge(self, edge):
         """ Adds an edge, at the end of the list of edges is complete or in the middle if the list is sparse"""
@@ -174,10 +178,25 @@ class PavingGraph:
         while self._used_edge_ids.get(self._next_edge_id, default=False):
             self._next_edge_id += 1
 
-    def blue_adjacency_mat(self):
-        N = len(self._vertices)
+    def total_adjacency_mat(self):
+        N = len(self._subvertices)
         adj_mat = np.zeros((N, N))
+        for edge in self._edges:
+            adj_mat[edge.subvertices[0].id, edge.subvertices[1].id] = 1 # or edge.weight ?
+        for vertex in self._vertices:
+            adj_mat[vertex.points[0].id, vertex.points[1].id] = 1 # or vertex.length ?
+            adj_mat[vertex.points[1].id, vertex.points[0].id] = 1 # or vertex.length ?
         return adj_mat
+
+    def add_quad(self, quad, vertex, side=0):
+        """ Tries to append a quad to the graph
+        by merging its i th side/edge (default first)
+        and a specified vertex (a.k.a. real life edge) from the graph
+
+        If it is possible to add a quad here, does so and returns 0
+        else returns -1"""
+        check_list = quad.sides[0] == vertex.length #Potentiellement ajouter une tolérance d'erreur (?)
+
 
 
 def add_quad(noeud, quad, angle, cote="d"):

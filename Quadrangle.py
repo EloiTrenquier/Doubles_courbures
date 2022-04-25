@@ -67,9 +67,11 @@ class Quad:
         return desc
 
     def rotate(self, number_rotations=1):
-        """ Rotates the quad in the anti clock wise direction"""
+        """ Rotates the quad in the anti clock wise direction
+        ABCD.rotate(1) -> BCDA """
         ang = self._angles
         cot = self._sides
+        number_rotations = -number_rotations
         n_rot = number_rotations%4
         n_rot = 4-n_rot
         ang = ang[n_rot:] + ang[:n_rot]
