@@ -29,6 +29,7 @@ class Vertex:
         self._id = id
         self._points = [sub_vertex1, sub_vertex2]
         self._length = length # == an angle on the sphere
+        self._inside_edge = Edge(self, self, sub_vertex1, sub_vertex2, length, "blue")
 
     @property
     def id(self):
@@ -38,20 +39,28 @@ class Vertex:
     def points(self):
         return self._points
 
+    @property
+    def inside_edge(self):
+        return self._inside_edge
+
     def set_id(self, id):
         self._id = id
         for sub_v in self._points:
             sub_v.set_parent_id(id)
 
+    def set_inside_edge(self, edge):
+        self._inside_edge = edge
+
 
 class SubVertex:
     """ A subVertex is a point of a quadrangle on the Sphere Paving"""
 
-    def __init__(self, parent_id, in_edge_id=None, out_edge_id=None, id=None):
+    def __init__(self, parent_id=None, in_edge_id=None, out_edge_id=None, neighbour_edge_id=None, id=None):
         """ A SubVertex may be part of multiple vertices, to recognize a SubVertex we use its id"""
-        self._parent_id = parent_id #id of the edge it is in
+        self._parent_id = parent_id #id of the vertex it is in
         self._in_edge_id = in_edge_id #id of the edge that goes from another subvertex to this one
         self._out_edge_id = out_edge_id #id of the edge that goes from this vertex to another
+        self._neighbour_edge_id = neighbour_edge_id #id of the blue edge that goes to this neighbour
         self._id = id #Name of this subvertex, unique
         #A subvertex can represent the same vertex in "real life" ('A' for instance),
         #A subvetex representing A is connected to another subvertex by a red edge iff this one also represents A
@@ -59,6 +68,10 @@ class SubVertex:
     @property
     def id(self):
         return self._id
+
+    @property
+    def neighbour_edge_id(self):
+        return self._neighbour_edge_id
 
     @property
     def in_edge_id(self):
@@ -80,6 +93,9 @@ class SubVertex:
 
     def set_id(self, id):
         self._id = id
+
+    def set_neighbour_edge_id(self, id):
+        self._neighbour_edge_id = id
 
     def set_parent_id(self, id):
         self._parent_id = id
@@ -127,8 +143,12 @@ class Edge:
 
     def set_id(self, id):
         out_subv, in_subv = self._subvertices[0], self._subvertices[1]
-        out_subv.set_out_edge_id(id)
-        in_subv.set_in_edge_id(id)
+        if self._color == "red":
+            out_subv.set_out_edge_id(id)
+            in_subv.set_in_edge_id(id)
+        elif self._color == "blue":
+            out_subv.set_neighbour_edge_id(id)
+            in_subv.set_neighbour_edge_id(id)
         self._id = id
 
 class PavingGraph:
@@ -148,14 +168,15 @@ class PavingGraph:
         self._used_edge_ids = {}
         self._next_edge_id = 0
 
-        for vertex in vertices:
+        for vertex in self._vertices:
             self._subvertices.append(vertex.points[0])
             self._subvertices.append(vertex.points[1])
             vertex.set_id(self._next_vert_id)
             self._used_vert_ids[self._next_vert_id] = True
             self._next_vert_id += 1
+            self._edges.append(vertex.inside_edge)
 
-        for edge in edges:
+        for edge in self._edges:
             edge.set_id(self._next_edge_id)
             self._used_edge_ids[self._next_edge_id] = True
             self._next_edge_id += 1
@@ -164,6 +185,18 @@ class PavingGraph:
             sv.set_id(self._next_subv_id)
             self._used_subv_ids[self._next_subv_id] = True
             self._next_subv_id += 1
+
+    def add_subvertex(self, subv):
+        """ Adds a subvertex and updates the subvertex registry"""
+        if self._next_subv_id >= len(self._subvertices):
+            self._subvertices.append(subv)
+        else:
+            self._subvertices[self._next_subv_id] = subv
+        subv.set_id(self._next_subv_id)
+        self._used_subv_ids[self._next_subv_id] = True
+        self._next_subv_id += 1
+        while self._used_subv_ids.get(self._next_subv_id, default=False):
+            self._next_vert_id += 1
 
     def add_vertex(self, vertex):
         """ Adds a vertex, at the end of the list of vertices is complete or in the middle if the list is sparse"""
@@ -174,7 +207,7 @@ class PavingGraph:
         vertex.set_id(self._next_vert_id)
         self._used_vert_ids[self._next_vert_id] = True
         self._next_vert_id += 1
-        while self._used_subv_ids.get(self._next_subv_id, default=False):
+        while self._used_vert_ids.get(self._next_vert_id, default=False):
             self._next_vert_id += 1
 
     def remove_vertex(self, vertex):
@@ -205,33 +238,96 @@ class PavingGraph:
             adj_mat[vertex.points[1].id, vertex.points[0].id] = 1 # or vertex.length ?
         return adj_mat
 
-    def add_quad(self, quad, vertex, side=0):
+    def find_last_subvertex(self, subvertex):
+        """A function that finds the last subvertex and the angle around a certain subvertex"""
+        tot_angle = 0
+        subv = subvertex
+        # Either p1.in_edge_id or p1.out_edge_id should be none
+        assert subv.in_edge_id is None or subv.out_edge_id is None
+        while subv.in_edge_id is not None:
+            la_edge = self._edges[subv.in_edge_id]
+            tot_angle += la_edge.weight
+            subv = la_edge.subvertices[0]
+        while subv.out_edge_id is not None:
+            la_edge = self._edges[subv.out_edge_id]
+            tot_angle += la_edge.weight
+            subv = la_edge.subvertices[1]
+        return tot_angle, subv
+
+    def add_quad(self, quad, vertex_AB, side=0):
         """ Tries to append a quad to the graph
         by merging its i th side/edge (default first)
         and a specified vertex (a.k.a. real life edge) from the graph
 
+        We consider the quad we have as an ABCD quad with: B = p1, C = p3, A = p2 and D = ?
+
         If it is possible to add a quad here, does so and returns 0
         else returns -1"""
-        check_list = quad.sides[side] == vertex.length #Potentiellement ajouter une tolérance d'erreur (?)
-        free_pass = False
+        add_BC, add_CD1, add_CD2, add_DA = True, True, True, True
+        if quad.sides[side] != vertex_AB.length: #Potentiellement ajouter une tolérance d'erreur (?)
+            return -1
+        #The first side of our quad fits on another edge : no need to create a vertex
         # We need to check for each edge of our quad whether it is free
         # or it coincides with another real life edge (a graph vertex)
         # 1st, we test for the 1st edge (in the clockwise order == edge[0] if we rotate the quad once anticlockwise)
-        p1 = vertex.points[0]
-        tot_angle_p1 = quad.beta #The first angle clockwise
-        #Either p1.in_edge_id or p1.out_edge_id should be none
-        assert p1.in_edge_id is None or p1.out_edge_id is None
-        while p1.in_edge_id is not None:
-            la_edge = self._edges[p1.in_edge_id]
-            tot_angle_p1 += la_edge.weight
-            p1 = la_edge.subvertices[0]
-        while p1.out_edge_id is not None:
-            la_edge = self._edges[p1.out_edge_id]
-            tot_angle_p1 += la_edge.weight
-            p1 = la_edge.subvertices[1]
+        p1 = vertex_AB.points[0] #Le point B
+        tot_angle_p1, n_p1 = self.find_last_subvertex(p1) #N_p1 est le point B mais contenu dans le dernier vertex
+        tot_angle_p1 += quad.beta #The first angle clockwise
         if tot_angle_p1 > 2*pi: #+tolerance if we want some tolerance
             return -1
-
+        elif tot_angle_p1 - 2*pi == 0: # < ... if we offer tolerance
+            vertex_BC = self._vertices[n_p1.parent_id]
+            if quad.b != vertex_BC.length:
+                return -1
+            else:
+                add_BC = False #The second side of our quad fits on another edge : no need to create a vertex
+                if vertex_BC.points[0].id == n_p1.id:
+                    p3 = vertex_BC.points[1]
+                else:
+                    p3 = vertex_BC.points[0]
+                tot_angle_p3, n_p3 = self.find_last_subvertex(p3) #n_p3 est le point C mais dans le dernier vertex
+                tot_angle_p3 += quad.gamma
+                if tot_angle_p3 > 2 * pi:  # +tolerance if we want some tolerance
+                    return -1
+                elif tot_angle_p3 - 2 * pi == 0:  # < ... if we offer tolerance
+                    vertex_CD = self._vertices[p3.parent_id]
+                    if quad.c != vertex_CD.length:
+                        return -1
+                    else:
+                        add_CD1 = False #The third side of our quad fits on another edge : no need to create a vertex
+        p2 = vertex_AB.points[1] #Should be A
+        tot_angle_p2, n_p2 = self.find_last_subvertex(p2) #A but in the last vertex (furthest from AB)
+        tot_angle_p2 += quad.alpha  # The first angle clockwise
+        if tot_angle_p2 > 2 * pi:  # +tolerance if we want some tolerance
+            return -1
+        elif tot_angle_p2 - 2 * pi == 0:  # < ... if we offer tolerance
+            vertex_AD = self._vertices[n_p2.parent_id]
+            if quad.d != vertex_AD.length:
+                return -1
+            else:
+                add_DA = False #The fourth edge of our quad fits on another edge : no need to create a vertex
+                if vertex_AD.points[0].id == n_p2.id:
+                    p4 = vertex_AD.points[1]
+                else:
+                    p4 = vertex_AD.points[0]
+                tot_angle_p4, n_p4 = self.find_last_subvertex(p4)
+                tot_angle_p4 += quad.delta
+                if tot_angle_p4 > 2 * pi:  # +tolerance if we want some tolerance
+                    return -1
+                elif tot_angle_p4 - 2 * pi == 0:  # < ... if we offer tolerance
+                    vertex_CD = self._vertices[p3.parent_id]
+                    if quad.c != vertex_CD.length:
+                        return -1
+                    else:
+                        add_CD2 = False #The third side of our quad fits on another edge : no need to create a vertex
+        if add_BC:
+            new_B = SubVertex()
+            new_C = SubVertex()
+            self.add_subvertex(new_B)
+            self.add_subvertex(new_C)
+            BC = Vertex(B,C, quad.b)
+            if add_CD1:
+        return 0
 
 
 
