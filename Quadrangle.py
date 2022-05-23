@@ -111,3 +111,6 @@ class Quad:
 
     def area(self):
         return self.alpha + self.beta + self.gamma + self.delta - 2 * np.pi
+
+
+

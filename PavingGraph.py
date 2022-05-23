@@ -169,6 +169,7 @@ class PavingGraph:
         self._used_edge_ids = {}
         self._next_edge_id = 0
 
+
         for vertex in self._vertices:
             self._subvertices.append(vertex.points[0])
             self._subvertices.append(vertex.points[1])
@@ -186,6 +187,18 @@ class PavingGraph:
             sv.set_id(self._next_subv_id)
             self._used_subv_ids[self._next_subv_id] = True
             self._next_subv_id += 1
+
+
+    def copy(self, graphe):
+        self._vertices = graphe._vertices
+        self._subvertices = graphe._subvertices
+        self._edges = graphe._edges
+        self._used_vert_ids = graphe._used_vert_ids
+        self._next_vert_id = graphe._next_vert_id
+        self._used_subv_ids = graphe._used_subv_ids
+        self._next_subv_id = graphe._next_subv_id
+        self._used_edge_ids = graphe._used_edge_ids
+        self._next_edge_id = graphe._next_edge_id
 
     def add_subvertex(self, subv):
         """ Adds a subvertex and updates the subvertex registry"""
@@ -432,3 +445,33 @@ def possible_noeud(liste_quad, valence):
         if somme_angle_noeud(noeud_possible[i]) > 2 * pi - eps:
             noeuds_finaux.append(noeud_possible[i])
     return noeuds_finaux
+
+
+def construction_graphe(quadrangles, quad_init, graphe, aire):
+
+    graph = PavingGraph([], [])
+    quad_dispo = []
+    for quad in quadrangles:
+        quad_dispo.append(quad);
+        quad_dispo.append(quad.rotate());
+        quad_dispo.append(quad.rotate().rotate());
+        quad_dispo.append(quad.rotate().rotate().rotate());
+    n = len(quad_dispo)
+    compt = 0
+    for vertex in graphe._vertex:
+        for quad in quad_dispo:
+            g = PavingGraph([],[]);
+            g.copy(graphe)
+            ajout_bool = g.add_quad(quad, vertex)
+            if ajout_bool:
+                compt += 1
+                g,bool = construction_graphe(quadrangles, g, aire + quad.area())
+            if bool:
+                return g, bool
+            if aire > 0.80*4*np.pi:
+                print("cette formation couvre plus de 80% de la sphère")
+                return g, True
+    return g, False
+
+
+
