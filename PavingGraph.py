@@ -61,6 +61,7 @@ class SubVertex:
         self._in_edge_id = in_edge_id #id of the edge that goes from another subvertex to this one
         self._out_edge_id = out_edge_id #id of the edge that goes from this vertex to another
         self._neighbour_edge_id = neighbour_edge_id #id of the blue edge that goes to this neighbour
+        #self._node_id = node_id
         self._id = id #Name of this subvertex, unique
         #A subvertex can represent the same vertex in "real life" ('A' for instance),
         #A subvetex representing A is connected to another subvertex by a red edge iff this one also represents A
@@ -254,6 +255,17 @@ class PavingGraph:
             subv = la_edge.subvertices[1]
         return tot_angle, subv
 
+    def create_vertex(self, length):
+        A = SubVertex()
+        B = SubVertex()
+        self.add_subvertex(A)
+        self.add_subvertex(B)
+        AB = Vertex(A, B, length)
+        self.add_vertex(AB)
+        AB_edge = Edge(AB, AB, A, B, length, "red")
+        self.add_edge(AB_edge)
+        return A, B, AB
+
     def add_quad(self, quad, vertex_AB, side=0):
         """ Tries to append a quad to the graph
         by merging its i th side/edge (default first)
@@ -263,8 +275,9 @@ class PavingGraph:
 
         If it is possible to add a quad here, does so and returns 0
         else returns -1"""
+        quad = quad.rotate(side)
         add_BC, add_CD1, add_CD2, add_DA = True, True, True, True
-        if quad.sides[side] != vertex_AB.length: #Potentiellement ajouter une tolérance d'erreur (?)
+        if quad.sides[0] != vertex_AB.length: #Potentiellement ajouter une tolérance d'erreur (?)
             return -1
         #The first side of our quad fits on another edge : no need to create a vertex
         # We need to check for each edge of our quad whether it is free
@@ -274,11 +287,11 @@ class PavingGraph:
         tot_angle_p1, n_p1 = self.find_last_subvertex(p1) #N_p1 est le point B mais contenu dans le dernier vertex
         tot_angle_p1 += quad.beta #The first angle clockwise
         if tot_angle_p1 > 2*pi: #+tolerance if we want some tolerance
-            return -1
+            return False
         elif tot_angle_p1 - 2*pi == 0: # < ... if we offer tolerance
             vertex_BC = self._vertices[n_p1.parent_id]
             if quad.b != vertex_BC.length:
-                return -1
+                return False
             else:
                 add_BC = False #The second side of our quad fits on another edge : no need to create a vertex
                 if vertex_BC.points[0].id == n_p1.id:
@@ -288,46 +301,74 @@ class PavingGraph:
                 tot_angle_p3, n_p3 = self.find_last_subvertex(p3) #n_p3 est le point C mais dans le dernier vertex
                 tot_angle_p3 += quad.gamma
                 if tot_angle_p3 > 2 * pi:  # +tolerance if we want some tolerance
-                    return -1
+                    return False
                 elif tot_angle_p3 - 2 * pi == 0:  # < ... if we offer tolerance
-                    vertex_CD = self._vertices[p3.parent_id]
-                    if quad.c != vertex_CD.length:
-                        return -1
+                    vertex_CD1 = self._vertices[n_p3.parent_id]
+                    if quad.c != vertex_CD1.length:
+                        return False
                     else:
                         add_CD1 = False #The third side of our quad fits on another edge : no need to create a vertex
+                        if vertex_CD1.points[0].id == n_p3.id:
+                            p4b = vertex_CD1.points[1]
+                        else:
+                            p4b = vertex_CD1.points[0]
+
         p2 = vertex_AB.points[1] #Should be A
         tot_angle_p2, n_p2 = self.find_last_subvertex(p2) #A but in the last vertex (furthest from AB)
         tot_angle_p2 += quad.alpha  # The first angle clockwise
         if tot_angle_p2 > 2 * pi:  # +tolerance if we want some tolerance
-            return -1
+            return False
         elif tot_angle_p2 - 2 * pi == 0:  # < ... if we offer tolerance
-            vertex_AD = self._vertices[n_p2.parent_id]
-            if quad.d != vertex_AD.length:
-                return -1
+            vertex_DA = self._vertices[n_p2.parent_id]
+            if quad.d != vertex_DA.length:
+                return False
             else:
                 add_DA = False #The fourth edge of our quad fits on another edge : no need to create a vertex
-                if vertex_AD.points[0].id == n_p2.id:
-                    p4 = vertex_AD.points[1]
+                if vertex_DA.points[0].id == n_p2.id:
+                    p4 = vertex_DA.points[1]
                 else:
-                    p4 = vertex_AD.points[0]
+                    p4 = vertex_DA.points[0]
                 tot_angle_p4, n_p4 = self.find_last_subvertex(p4)
                 tot_angle_p4 += quad.delta
                 if tot_angle_p4 > 2 * pi:  # +tolerance if we want some tolerance
-                    return -1
+                    return False
                 elif tot_angle_p4 - 2 * pi == 0:  # < ... if we offer tolerance
-                    vertex_CD = self._vertices[p3.parent_id]
-                    if quad.c != vertex_CD.length:
-                        return -1
+                    vertex_CD2 = self._vertices[n_p4.parent_id]
+                    if quad.c != vertex_CD2.length:
+                        return False
                     else:
                         add_CD2 = False #The third side of our quad fits on another edge : no need to create a vertex
+                        if vertex_CD2.points[0].id == n_p4.id:
+                            p3b = vertex_CD2.points[1]
+                        else:
+                            p3b = vertex_CD2.points[0]
         if add_BC:
-            new_B = SubVertex()
-            new_C = SubVertex()
-            self.add_subvertex(new_B)
-            self.add_subvertex(new_C)
-            BC = Vertex(B,C, quad.b)
-            if add_CD1:
-        return 0
+            B,C, BC = self.create_vertex(quad.b)
+        else:
+            B,C, BC = n_p1, p3,  vertex_BC #vertex_BC is no longer exterior
+
+        if add_DA:
+            D,A, DA = self.create_vertex(quad.d)
+        else:
+            D,A, DA = n_p2, p4, vertex_DA #vertex_DA is no longer exterior
+
+        if add_CD1 and add_CD2:
+            Cd,Dc, CD = self.create_vertex(quad.c)
+        elif add_CD2:
+            Cd,Dc, CD = n_p3, p4b, vertex_CD1
+        else:
+            Cd,Dc, CD = p3b, n_p4, vertex_CD2
+
+        ABC = Edge(vertex_AB, BC, n_p1, B, quad.beta, "blue")
+        self.add_edge(ABC)
+        BCD = Edge(BC, CD, C, Cd, quad.gamma, "blue")
+        self.add_edge(BCD)
+        CDA = Edge(CD, DA, Dc, D, quad.delta, "blue")
+        self.add_edge(CDA)
+        DAB = Edge(DA, vertex_AB, A, n_p2, quad.alpha, "blue")
+        self.add_edge(DAB)
+
+        return True
 
 
 
